@@ -18,7 +18,7 @@ if [ "$win10_pid" ];then
 	vm_win10
 	if [ "$win10_log_1" == 1 ];then
 		if [ `cat /tmp/1` == 1 ];then
-		osascript -e 'display notification "您虚拟机的视频似乎已经停止了" with title "虚拟机"'
+		osascript -e 'display notification "您windows10播放视频似乎已经停止了" with title "虚拟机"'
 		fi
 	fi
 	echo "$win10_log_1" > /tmp/1
