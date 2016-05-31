@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# httpd	Startup script for the Apache HTTP Server
+# chkconfig: - 90 20
+# 
+# processname: httpd
+# config: /etc/httpd/conf/httpd.conf
+# config: /etc/sysconfig/httpd
+# pidfile: /var/run/httpd.pid
+
+# Source function library.
+[ -f /etc/rc.d/init.d/functions ] && . /etc/rc.d/init.d/functions
+
+# pull in sysconfig settings
+[ -f /etc/sysconfig/httpd ] && . /etc/sysconfig/httpd
+
+#if [ -f /etc/sysconfig/httpd ]; then
+#	. /etc/sysconfig/httpd
+#fi
+
+# Start httpd in the C locale by default.
+HTTPD_LANG=${HTTPD_LANG-"C"}
+
+RETVAL=0
+prog="httpd"
+
+# Path to the apachectl script, server binary, and short-form for messages.
+apachectl=/usr/local/httpd/bin/apachectl
+httpd=${HTTPD-/usr/local/httpd/bin/httpd}
+pidfile=${PIDFILE-/var/run/httpd.pid}
+lockfile=${LOCKFILE-/var/lock/subsys/httpd}
+
+
+start() {
+	echo -n $"Starting $prog: "
+	LANG=$HTTPD_LANG daemon --pidfile=${pidfile} $httpd $OPTIONS
+	RETVAL=$?
+	echo
+	[ $RETVAL = 0 ] && touch ${lockfile}
+	return $RETVAL
+}
+
+stop() {
+	echo -n $"Stopping $prog: "
+	killproc -p ${pidfile} -d 10 $httpd
+	RETVAL=$?
+	echo
+        [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+}
+
+reload() {
+	echo -n $"Reloading $prog: "
+	if ! LANG=$HTTPD_LANG $httpd $OPTIONS -t >& /dev/null; then
+		RETVAL=$?
+	        echo $"not reloading due to configuration syntax error"
+	        failure $"not reloading $httpd due to configuration syntax error"
+	else
+		killproc -p ${pidfile} $httpd -HUP
+		RETVAL=$?
+	fi
+	echo
+}
+
+case "$1" in
+  start)
+  start
+  ;;
+  stop)
+  stop
+  ;;
+  status)
+	status -p ${pidfile} $httpd
+  RETVAL=$?
+  ;;
+  restart)
+  stop
+  sleep 2
+  start 
+  ;;
+  reload)
+	reload
+  ;;
+  condrestart)
+  if [ -f ${pidfile} ] ; then
+	stop
+	start
+  fi
+  ;;
+  graceful|help|configtest|fullstartus)
+  $apachectl $@
+  RETVAL=$?
+  ;;
+  *)
+  echo $"Usage: $prog {start|stop|restart|reload|condrestart|graceful|help|configtest|fullstartus}"
+  exit 1
+esac
+
+exit $RETVAL
