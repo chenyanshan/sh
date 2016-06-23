@@ -1,0 +1,47 @@
+- hosts: hanodes
+  remote_user: root
+  vars:
+    epel: epel-release-6-8.noarch.rpm
+    crmsh: crmsh-2.2.1-1.2.noarch.rpm
+    crmshScripts: crmsh-scripts-2.2.1-1.2.noarch.rpm
+    pythonParallax: python-parallax-1.0.1-14.1.noarch.rpm
+  tasks:
+    - name: copy epel packages
+      copy: src=/ansible/{{ epel }} dest=/tmp/{{ epel }}
+    - name: copy crmsh packages
+      copy: src=/ansible/corosync/packages/{{ crmsh }} dest=/tmp/{{ crmsh }}
+    - name: copy crmsh-scripts  packages
+      copy: src=/ansible/corosync/packages/{{ crmshScripts }} dest=/tmp/{{ crmshScripts }}
+    - name: copy python-parallax packages
+      copy: src=/ansible/corosync/packages/{{ pythonParallax }} dest=/tmp/{{ pythonParallax }}
+    - name: epel src packages installling
+      command: rpm -ivh /tmp/{{ epel }} 
+    - name: pssh installling
+      command: yum -y install pssh
+    - name: corosync installing
+      yum: name=corosync state=present
+    - name: pacemaker installing
+      yum: name=pacemaker state=present
+    - name: crmsh-scripts packages installing
+      command: yum -y install /tmp/{{ crmshScripts }}  
+    - name: python-parallax packages installing
+      command: yum -y install /tmp/{{ pythonParallax }}  
+    - name: crmsh packages installing
+      command: yum -y install /tmp/{{ crmsh }}  
+    - name: copy authkey configure file
+      copy: src=/ansible/corosync/configFile/authkey dest=/etc/corosync/authkey
+    - name: authkey mode 400
+      file: path=/etc/corosync/authkey mode=400
+      notify:
+        - restart corosync
+    - name: copy corosync.conf configure file
+      copy: src=/ansible/corosync/configFile/corosync.conf dest=/etc/corosync/corosync.conf
+      tags:
+        - conf
+      notify:
+        - restart corosync
+    - name: add corosync in chkconfig on
+      service: name=corosync state=started enabled=yes
+  handlers:
+    - name: restart corosync
+      service: name=corosync state=restarted
